@@ -1,0 +1,9 @@
+.buttons {
+  display: flex;
+  justify-content: space-around;
+}
+
+h3 {
+  padding-bottom: 20px;
+}
+
