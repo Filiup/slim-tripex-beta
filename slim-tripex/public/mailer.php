@@ -7,7 +7,7 @@ use PHPMailer\PHPMailer\SMTP;
 require __DIR__ . "/Config.php";
 
 $cfg = new Helpers\Config();
-$cfg->load("../config/email.php");
+$cfg->load(__DIR__ . "/../config/email.php");
 
 
 function sendMail($email, $password, $recipient, $url, $lang) {
@@ -16,11 +16,12 @@ function sendMail($email, $password, $recipient, $url, $lang) {
     $mail = new PHPMailer(true);
     $mail->isSMTP();
     
-    $mail->Host = "smtp.gmail.com";
+     $mail->Host = "smtp.gmail.com";
     
     $mail->SMTPAuth = true;
-    $mail->SMTPSecure = "tls";
-    $mail->Port = "587";
+    $mail->SMTPSecure = "tls"; // "tls"
+    $mail->Port = 587;
+    $mail->CharSet = 'UTF-8';
     
     // Email a heslo z ktorého budeme odosielať 
     $mail->Username = $email;

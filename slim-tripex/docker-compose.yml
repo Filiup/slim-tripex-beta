@@ -1,0 +1,21 @@
+services:
+  ngnix:
+    container_name: "tripex-from-nginx"
+    build:
+      context: .
+      dockerfile: "docker/nginx/DockerFile"
+    image: tripex:form-nginx
+    ports:
+      - "8080:80"
+    volumes:
+      - .:/app/
+
+  php:
+    container_name: "tripex-from-php"
+    build:
+      context: .
+      dockerfile: "docker/php/DockerFile"
+
+    image: tripex:form-php
+    volumes:
+      - .:/app/

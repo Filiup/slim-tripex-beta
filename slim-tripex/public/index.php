@@ -11,6 +11,8 @@ require __DIR__ . '/../vendor/autoload.php';
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__  . "/../");
 $dotenv->load();
 
+require __DIR__ . '/cors.php';
+
 require __DIR__ . "/functions.php";
 require __DIR__ . "/mailer.php";
 
@@ -18,32 +20,18 @@ $app = AppFactory::create();
 $file = $_ENV["FILE"];
 
 
-// ----------------------------- CORS ---------------------------------
-$app->options('/{routes:.+}', function ($request, $response, $args) {
-    return $response;
-});
-
-$app->add(function ($request, $handler) {
-    $response = $handler->handle($request);
-    return $response
-            ->withHeader('Access-Control-Allow-Origin', '*')
-            ->withHeader('Access-Control-Allow-Headers', 'X-Requested-With, Content-Type, Accept, Origin, Authorization')
-            ->withHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
-});
-// ----------------------------- CORS ---------------------------------
-
 // Middleware ktorý do requestu pribalí Ip adresu klienta
 $checkProxyHeaders = true;
 $trustedProxies = ['10.0.0.1', '10.0.0.2'];
 $app->add(new RKA\Middleware\IpAddress($checkProxyHeaders, $trustedProxies));
 
-/* Odkomentovať len v prípade potreby
+
 
 $app->get("/", function(Request $request, Response $response) use ($file) {
-    return $response->withJson(paymentsGet($file) );
+    // return $response->withJson(paymentsGet($file) );
+    return $response->write("Payment server");
 }); 
 
-*/
 
 $app->get("/{id}", function(Request $request, Response $response, array $args) use ($file) {
     // PHP renderer 
@@ -62,6 +50,7 @@ $app->get("/{id}", function(Request $request, Response $response, array $args) u
 
 
 
+
 $app->post("/", function(Request $request, Response $response) use($file) {
 
     // Overíme, že či na server boli zaslané správne dáta
@@ -72,12 +61,13 @@ $app->post("/", function(Request $request, Response $response) use($file) {
 
     // Server ip, port
     $server = $_SERVER["HTTP_HOST"];
+    $url = $_ENV["PROTOCOL"] . "://$server/$id";
 
 
     // Odosielanie mailu
     
     try {
-        sendMail($_ENV["MAIL"], $_ENV["MAIL_PASSWORD"], $request->getParam("data")["customer_mail"], "http://$server/$id", $request->getParam("data")["country"]);
+        sendMail($_ENV["MAIL"], $_ENV["MAIL_PASSWORD"], $request->getParam("data")["customer_mail"], $url, $request->getParam("data")["country"]);
     } catch(Exception $err) {
         return $response->withStatus(500)->write("Mail was not send: \n" . $err->getMessage());
     }
@@ -125,8 +115,17 @@ $app->post("/", function(Request $request, Response $response) use($file) {
     ];
 
     paymentsPush($file, $json_data);
-    return $response->write("http://$server/$id");
+    return $response->write($url);
 
+
+});
+
+$app->post("/login", function(Request $request, Response $response) {
+    $login = $request->getParam("login");
+    $password = $request->getParam("password");
+
+    if ($password != $_ENV["FORM_PASSWD"] || $login != $_ENV["FORM_LOGIN"])  return $response->withStatus(401)->write("The password you have provided is not correct");
+    return $response->withStatus(200);
 
 });
 
